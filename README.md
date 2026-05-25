@@ -10,7 +10,7 @@ A custom Electron wrapper for `deadshot.io` with a built-in realtime ping viewer
 - Press `Backspace` to start realtime latency measurements
 - Displays live ping updates every ~800ms for 5 seconds
 - Shows ping results in an overlay at the bottom-right of the screen
-- At last it works and its updated
+
 ## Files
 
 - `index.js` - Electron main process configuration and window creation
