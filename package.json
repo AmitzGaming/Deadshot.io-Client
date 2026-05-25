@@ -6,9 +6,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron ."
   },
-  "author": "",
+  "author": "AmitzGaming or Sphygnoman",
   "license": "ISC",
-  "description": "",
+  "description": "A Deadshot.io client",
   "devDependencies": {
     "electron": "^42.2.0"
   }
