@@ -3,6 +3,7 @@ const path = require('path');
 const { app, BrowserWindow, Menu, ipcMain, nativeImage } = require('electron');
 
 const COOKIE_STORE_PATH = path.join(__dirname, 'cookies');
+const SETTINGS_FILE_PATH = path.join(COOKIE_STORE_PATH, 'settings.json');
 let pingOverlayEnabled = true;
 let fpsOverlayEnabled = true;
 
@@ -16,10 +17,49 @@ function updatePingMenuItem() {
   }
 }
 
+function ensureSettingDirectory() {
+  if (!fs.existsSync(COOKIE_STORE_PATH)) {
+    try {
+      fs.mkdirSync(COOKIE_STORE_PATH, { recursive: true });
+    } catch (e) {
+      console.warn('Failed to create setting directory:', e);
+    }
+  }
+}
+
+function loadSettings() {
+  ensureSettingDirectory();
+
+  try {
+    if (fs.existsSync(SETTINGS_FILE_PATH)) {
+      const raw = fs.readFileSync(SETTINGS_FILE_PATH, 'utf8');
+      return Object.assign({ vsyncEnabled: true }, JSON.parse(raw));
+    }
+  } catch (e) {
+    console.warn('Failed to load settings:', e);
+  }
+
+  return { vsyncEnabled: true };
+}
+
+function saveSettings(settings) {
+  ensureSettingDirectory();
+
+  try {
+    fs.writeFileSync(SETTINGS_FILE_PATH, JSON.stringify(settings, null, 2), 'utf8');
+  } catch (e) {
+    console.warn('Failed to save settings:', e);
+  }
+}
+
 app.setPath('userData', COOKIE_STORE_PATH);
 
 // --- CRITICAL PERFORMANCE FLAGS ---
-app.commandLine.appendSwitch('disable-frame-rate-limit');
+const settings = loadSettings();
+if (!settings.vsyncEnabled) {
+  app.commandLine.appendSwitch('disable-frame-rate-limit');
+  app.commandLine.appendSwitch('disable-gpu-vsync');
+}
 app.commandLine.appendSwitch('force-gpu-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
@@ -115,6 +155,20 @@ function setupAppMenu(win) {
       ]
     }] : []),
     {
+      label: 'Settings',
+      submenu: [
+        {
+          label: 'Open Settings',
+          accelerator: 'CmdOrCtrl+,',
+          click: () => {
+            if (win && !win.isDestroyed()) {
+              win.webContents.send('open-settings-overlay');
+            }
+          }
+        }
+      ]
+    },
+    {
       label: 'View',
       submenu: [
         {
@@ -160,6 +214,12 @@ app.whenReady().then(() => {
     pingOverlayEnabled = !pingOverlayEnabled;
     updatePingMenuItem();
     event.sender.send('ping-overlay-toggle', pingOverlayEnabled);
+  });
+
+  ipcMain.on('renderer-settings-update', (_event, newSettings) => {
+    if (newSettings && typeof newSettings.vsyncEnabled === 'boolean') {
+      saveSettings({ vsyncEnabled: newSettings.vsyncEnabled });
+    }
   });
 
   app.on('activate', () => {

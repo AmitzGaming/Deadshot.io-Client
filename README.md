@@ -1,23 +1,23 @@
 # Deadshot.io Client
 
-A custom Electron wrapper for `deadshot.io` with built-in ping and FPS overlay controls.
+A desktop Electron wrapper for `deadshot.io` with built-in runtime overlays, a custom settings panel, and packaging helpers.
 
 ## Features
 
 - Launches the Deadshot.io web client in a fullscreen Electron window
-- Shows a local loading screen while the game page loads
-- Uses a preload script to inject overlays and keyboard controls into the page
-- Press `Backspace` to toggle the realtime ping overlay on/off
-- Repeats ping measurements every 500ms while the ping overlay is enabled
-- Press `Enter` to toggle the FPS overlay on/off
-- Use `F12` to open DevTools
-- Both overlays can also be enabled/disabled from the app menu
+- Displays a local loading screen while the game page loads
+- Injects a custom renderer settings overlay for VSync and overlay controls
+- Adds an FPS display and keeps telemetry visible while the game runs
+- Supports a native app icon fallback to a bundled SVG if no custom icon is found
+- Includes menu shortcuts for ping/FPS overlays and settings
+- Saves VSync preferences to a local settings file in `cookies/settings.json`
 
 ## Files
 
-- `index.js` - Electron main process configuration, window creation, and menu handling
-- `preload.js` - Renderer preload script that injects ping/FPS overlays and key listeners
-- `package.json` - Project metadata and startup script
+- `index.js` - Electron main process, window setup, command-line switches, and menu handling
+- `preload.js` - Renderer preload script that injects overlays, settings UI, and custom input behavior
+- `package.json` - Project metadata, scripts, and dependencies
+- `scripts/package.js` - CLI packaging wrapper for `electron-packager`
 
 ## Requirements
 
@@ -26,8 +26,7 @@ A custom Electron wrapper for `deadshot.io` with built-in ping and FPS overlay c
 
 ## Installation
 
-1. Open a terminal in the project folder.
-2. Install dependencies:
+Open a terminal in the project folder and install dependencies:
 
 ```bash
 npm install
@@ -39,34 +38,54 @@ npm install
 npm start
 ```
 
-Controls:
+## Controls
 
-- `Backspace` — toggle ping overlay and refresh latency every 500ms
-- `Enter` — toggle FPS overlay
+- `Backspace` — toggle the ping overlay
+- `Enter` — toggle the FPS overlay
 - `F12` — open DevTools
-- View menu:
-  - `Toggle Ping Overlay`
-  - `Toggle FPS Overlay`
+- `CmdOrCtrl+,` — open the custom settings overlay
+- `CmdOrCtrl+P` — toggle ping overlay from the View menu
+- `CmdOrCtrl+F` — toggle FPS overlay from the View menu
+
+## Settings
+
+- VSync settings are persisted locally in `cookies/settings.json`.
+- The built-in settings overlay can be opened from the app menu and saves preferences automatically.
+
+## Custom icon
+
+At runtime, the app prefers a custom icon inside an `ico/` folder at the project root:
+
+- `ico/app.ico`
+- `ico/icon.png`
+
+If no icon is found, the app falls back to a built-in SVG.
+
+## Packaging
+
+Use the built-in packaging scripts to create a Windows executable.
+
+```bash
+npm run package:win
+```
+
+Or use the CLI wrapper with custom options:
+
+```bash
+npm run package:cli -- --icon="icon/app.ico" --out=dist
+```
+
+Supported CLI flags:
+
+- `--dir` — source directory to package
+- `--out` / `--output` — output folder for the packaged app
+- `--platform` — target platform (default `win32`)
+- `--arch` — target architecture (default `x64`)
+- `--name` — application name
+- `--icon` — path to a custom icon file
 
 ## Notes
 
-- The app loads `https://deadshot.io` and uses a Chrome user agent.
-- Settings and overlay state are handled by the Electron preload script and IPC messages.
-- The app stores session data in a local `cookies/` folder.
- - To use a custom application icon, place `app.ico` (preferred on Windows) or `icon.png` inside an `ico/` folder at the project root. The app will load that icon at runtime and fall back to a bundled SVG if none is present.
-
-## Packaging (build EXE)
-
-You can package the app into a Windows executable using `electron-packager`. A small CLI wrapper is provided to make packaging easier and to select an icon.
-
-Examples:
-
-```bash
-# Use the packaged CLI with defaults (prefers ico/app.ico if present)
-npm run package:win
-
-# Use the CLI and explicitly specify an icon path
-npm run package:cli -- --icon="ico/app.ico" --out=dist
-```
-
-The script accepts these flags: `--dir`, `--out`, `--platform`, `--arch`, `--name`, `--icon`.
+- The Electron wrapper applies GPU and WebGL compatibility switches for better game performance.
+- The app stores local session/settings data in a `cookies/` directory under the project.
+- The packaging CLI will also check `icon/app.ico` and `icon/icon.png` if no explicit `--icon` is provided.
